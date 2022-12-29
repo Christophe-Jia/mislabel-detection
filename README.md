@@ -32,8 +32,7 @@ We run experiments on 5 **small** datasets...
 - webvision50(subset of webvision50)
 - clothing100k(subset of clothing 1M)
 
-We use the same subset as [AUM](https://drive.google.com/file/d/1rr2nvnnBMsbo1qcU3i3urJsDw86PJ9tR/view?usp=sharing) for this two subsets. Download and untar the file to access Cub-200-2011 and Caltech256. [Here](
-)
+We use the same subset as [AUM](https://github.com/asappresearch/aum/tree/master/examples/paper_replication) for this two subsets. Click [Here](https://drive.google.com/file/d/1rr2nvnnBMsbo1qcU3i3urJsDw86PJ9tR/view?usp=sharing) to download and untar the file to access Cub-200-2011 and Caltech256. 
 <!-- Taking CIFAR-10/100 dataset as a example, the whole flow can be divided into 3 steps. -->
 1. Acquisition of metadata and training dynamics (short for td) for manully-corrupted or real-world datasets.
 2. Training a LSTM model as detector
@@ -47,11 +46,11 @@ We use the same subset as [AUM](https://drive.google.com/file/d/1rr2nvnnBMsbo1qc
 generate_td.sh <datadir> <dataset> <seed> <noise_ratio> <noise_type> <net_type> <depth> <result_save_path>
 
 # run to get td for small datasets [no manual corruption]
-CUDA_VISABLE_DEVICES=0 generate_td.sh "/root/codespace/datasets" "cifar10" 1 0. "uniform" "resnet" 32 "./replication"
+CUDA_VISIBLE_DEVICES=0 generate_td.sh "/root/codespace/datasets" "cifar10" 1 0. "uniform" "resnet" 32 "./replication"
 # run to get td for small datasets [uniform 0.2 noisy]
-CUDA_VISABLE_DEVICES=0 generate_td.sh "/root/codespace/datasets" "tiny_imagenet" 1 0.2 "uniform" "resnet" 32 "./replication"
+CUDA_VISIBLE_DEVICES=0 generate_td.sh "/root/codespace/datasets" "tiny_imagenet" 1 0.2 "uniform" "resnet" 32 "./replication"
 # run to get td for large datasets [noise_ratio and noise_type are mute]
-CUDA_VISABLE_DEVICES=0 generate_td.sh "/root/codespace/datasets" "webvision50" 1 0. "uniform" "resnet" 50 "./replication"
+CUDA_VISIBLE_DEVICES=0 generate_td.sh "/root/codespace/datasets" "webvision50" 1 0. "uniform" "resnet" 50 "./replication"
 ```
 
 The arguments:
@@ -115,9 +114,9 @@ OrderedDict([
 ### STEP2: Training a LSTM model as detector
 ```sh
 # train a 2-layer lstm with noisy 0.2 cifar10 
-CUDA_VISABLE_DEVICES=0 python train_detector.py --r 0.2 --dataset cifar10 --files_path "./replication/cifar10_resnet32_percmislabeled0.2_uniform/computation4td_seed1"
+CUDA_VISIBLE_DEVICES=0 python train_detector.py --r 0.2 --dataset cifar10 --files_path "./replication/cifar10_resnet32_percmislabeled0.2_uniform/computation4td_seed1"
 # fine tuning a 2-layer lstm with noisy 0.2 cub based on cifar10_0.2_lstm_detector.pth.tar
-CUDA_VISABLE_DEVICES=0 python train_detector.py --r 0.2 --dataset cub_200_2011 --files_path "./replication/cifar10_resnet34_percmislabeled0.2_uniform/computation4td_seed1" --resume "cifar100_0.3_lstm_detector.pth.tar"
+CUDA_VISIBLE_DEVICES=0 python train_detector.py --r 0.2 --dataset cub_200_2011 --files_path "./replication/cifar10_resnet34_percmislabeled0.2_uniform/computation4td_seed1" --resume "cifar100_0.3_lstm_detector.pth.tar"
 ```
 
 2 comman **LSTM** models as default, each one is OK for both CIFAR-10 or CIFAR-100 task, but is better when corresponds to task:
@@ -140,12 +139,12 @@ detector_files='lstm_cifar10_20.pth.tar'
 # run to denoise sym cifar10
 for remove_ratio in 0.15 0.2 0.25
 do
-CUDA_VISABLE_DEVICES=0 small_dataset_sym_denoise.sh "/root/codespace/datasets" "cifar10" 1 0.2 "uniform" "./replication" ${detector_files} ${remove_ratio}
+CUDA_VISIBLE_DEVICES=0 small_dataset_sym_denoise.sh "/root/codespace/datasets" "cifar10" 1 0.2 "uniform" "./replication" ${detector_files} ${remove_ratio}
 done
 # run to denoise asym cifar100
 for remove_ratio in 0.35 0.4 0.45
 do
-CUDA_VISABLE_DEVICES=0 small_dataset_sym_denoise.sh "/root/codespace/datasets" "cifar100" 1 0.4 "asym" "./replication" ${detector_files} ${remove_ratio}
+CUDA_VISIBLE_DEVICES=0 small_dataset_sym_denoise.sh "/root/codespace/datasets" "cifar100" 1 0.4 "asym" "./replication" ${detector_files} ${remove_ratio}
 done
 ```
 
@@ -159,9 +158,9 @@ large_dataset_denoise.sh <datadir> <dataset> <seed> <result_save_path> <detector
 # run to detect-divide target dataset and retrain the model
 detector_files='mono_lstm_cifar100_30.pth.tar'
 # run to denoise WebVision50
-CUDA_VISABLE_DEVICES=0 large_dataset_denoise.sh "/root/codespace/datasets" "webvision50" 1 "./replication" ${detector_files} ${remove_ratio}
+CUDA_VISIBLE_DEVICES=0 large_dataset_denoise.sh "/root/codespace/datasets" "webvision50" 1 "./replication" ${detector_files} ${remove_ratio}
 # run to denoise Clothing100K
-CUDA_VISABLE_DEVICES=0 large_dataset_denoise.sh "/root/codespace/datasets" "clothing100k" 1 "./replication" ${detector_files} ${remove_ratio}
+CUDA_VISIBLE_DEVICES=0 large_dataset_denoise.sh "/root/codespace/datasets" "clothing100k" 1 "./replication" ${detector_files} ${remove_ratio}
 ```
 
 Arguments:
@@ -185,4 +184,22 @@ Output:
 ### Perfom data degging to further boost SOTA results
 >In Chapter 4.3, we apply a data degging strategy to further boost SOTA performance. Using a detector trained by noisy CIFAR-100, we first select
 a number of samples with the most suspicion as label noise. We train a new **MODEL** on the clean part of dataset. Then, labels of these samples are then replaced by error-free ones (using ground turth labels for CUB and **MODEL** prediction for Webvision), namely data debugging, recorded in cub_200_2011/ and mini_webvision/ .
-For replication, the only difference we made is the label of datasets. Based on the source code and instructions of [DivideMix Github](https://github.com/LiJunnan1992/DivideMix) and [AugDesc Github](https://github.com/KentoNishi/Augmentation-for-LNL), we mianly modify the datasets' labels reading part. We provide the modified dataloader and trainer for experiments on sym CUB-200-2011 and mini Webvision to boost DivideMix.
+For replication, the only difference we made is the label of datasets. Based on the source code and instructions of [DivideMix](https://github.com/LiJunnan1992/DivideMix) and [AugDesc](https://github.com/KentoNishi/Augmentation-for-LNL), we mianly modify the datasets' labels reading part. We provide the modified dataloader and trainer for experiments on sym CUB-200-2011 and mini Webvision to boost DivideMix.
+
+## Citing
+---
+>If you make use of our work, please cite our paper:
+
+```
+@article{jia2022learning,
+  title={Learning from Training Dynamics: Identifying Mislabeled Data Beyond Manually Designed Features},
+  author={Jia, Qingrui and Li, Xuhong and Yu, Lei and Bian, Jiang and Zhao, Penghao and Li, Shupeng and Xiong, Haoyi and Dou, Dejing},
+  journal={arXiv preprint arXiv:2212.09321},
+  year={2022}
+}
+```
+
+## Credits
+The implementation is based on [AUM](https://github.com/asappresearch/aum/tree/master/examples/paper_replication) code.
+Part of experiments is based on [DivideMix](https://github.com/LiJunnan1992/DivideMix) and [AugDesc](https://github.com/KentoNishi/Augmentation-for-LNL)
+Thanks for their brilliant works!
