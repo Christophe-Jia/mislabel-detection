@@ -33,7 +33,8 @@ We run experiments on 5 **small** datasets...
 - clothing100k(subset of clothing 1M)
 
 We use the same subset as [AUM](https://github.com/asappresearch/aum/tree/master/examples/paper_replication) for these two subsets. Click [Here](https://drive.google.com/file/d/1rr2nvnnBMsbo1qcU3i3urJsDw86PJ9tR/view?usp=sharing) to download and untar the file to access Cub-200-2011 and Caltech256. 
-<!-- Taking the CIFAR-10/100 dataset as an example, the whole flow can be divided into 3 steps. -->
+
+### Replication Steps: 
 1. Acquisition of metadata and training dynamics (short for td) for manually corrupted or real-world datasets.
 2. Training an LSTM model as a detector
 3. Retraining new model on clean data, including two parts as follow:
