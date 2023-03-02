@@ -113,37 +113,37 @@ def softmax_with_temperature(x,T):
             
     
 # drop last 遗留问题
-def transfor_and_save(savedir, logits,assigned_targets):
+def transfor_and_save(savedir, probas, assigned_targets):
     """Transform training dynamics with linear interpolation, then save in 'npz' format.
     Args:
-        logits (dict): A dictionary recording training dynamics.
+        probas (dict): A dictionary recording training dynamics.
         assigned_targets (list): The assigned targets of dataset.
     """
-    logits = [(k, logits[k]) for k in sorted(logits.keys())]
-    logits = np.asarray([logits[i][1] for i in range(len(logits))])
+    probas = [(k, probas[k]) for k in sorted(probas.keys())]
+    probas = np.asarray([probas[i][1] for i in range(len(probas))])
 
-    # Linear interpolation of given logits, to fix the logits broken by drop_last
-    # for logit in logits:
+    # Linear interpolation of given probas, to fix the probas broken by drop_last
+    # for logit in probas:
     #     bad_indexes = np.isnan(logit)
     #     good_indexes = np.logical_not(bad_indexes)
     #     interpolated = np.interp(bad_indexes.nonzero()[0], good_indexes.nonzero()[0], logit[good_indexes])
     #     logit[bad_indexes] = interpolated
-    logits = logits.astype(np.float16)
+    probas = probas.astype(np.float16)
 
-    targets_list = np.argsort(-logits.mean(axis=1), axis=1)
-    training_dynamics = np.ones_like(logits,dtype=np.float16)
-    labels = np.ones_like(logits[:,0,:],dtype=np.int16)
+    targets_list = np.argsort(-probas.mean(axis=1), axis=1)
+    training_dynamics = np.ones_like(probas,dtype=np.float16)
+    labels = np.ones_like(probas[:,0,:],dtype=np.int16)
 
-    for index,targets in enumerate(tqdm(targets_list,desc=f"Save")):
+    for index,targets in enumerate((targets_list)):
         # save ground turth td
         labels[index,0] = assigned_targets[index]
-        training_dynamics[index,:,0] = logits[index,:,assigned_targets[index]].tolist()
+        training_dynamics[index,:,0] = probas[index,:,assigned_targets[index]].tolist()
         # save topk td
         top_i=1
         for target in targets:
             if target != assigned_targets[index]:
                 labels[index,top_i] = target
-                training_dynamics[index,:,top_i] = logits[index,:,target].tolist()
+                training_dynamics[index,:,top_i] = probas[index,:,target].tolist()
                 top_i+=1
 
     np.savez_compressed(os.path.join(savedir, 'training_dynamics.npz'), **{'labels': labels, 'td': training_dynamics})

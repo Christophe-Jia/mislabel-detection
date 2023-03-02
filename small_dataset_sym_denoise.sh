@@ -5,10 +5,10 @@ dataset=$2
 seed=$3
 noise_ratio=$4
 noise_type=$5
-result_save_path=$6
-detector_file=$7
-remove_ratio=$8
+detector_file=$6
+remove_ratio=$7
 
+result_save_path=replication
 net_type=resnet
 depth=32
 

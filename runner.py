@@ -174,7 +174,7 @@ class Runner(object):
         # Model
         if self.dataset == "imagenet" or "webvision" in self.dataset or "clothing" in self.dataset:
             big_models = dict((key, val) for key, val in tvmodels.__dict__.items())
-            self.model = big_models[self.net_type](pretrained=False, num_classes=self.num_classes)
+            self.model = big_models[self.net_type+str(self.depth)](pretrained=False, num_classes=self.num_classes)
             if self.pretrained:
                 try:
                     pretrained_dict = torch.load('./models/resnet50_pretrained.pth')
@@ -191,7 +191,7 @@ class Runner(object):
         elif "caltech" in self.dataset or "cub" in self.dataset:
 
             tv_models = dict((key, val) for key, val in tvmodels.__dict__.items())
-            self.model = tv_models[self.net_type](pretrained=False, num_classes=self.num_classes)
+            self.model = tv_models[self.net_type+str(self.depth)](pretrained=False, num_classes=self.num_classes)
             
             if self.depth == 34:
                 pretrained_dict = torch.load('./models/resnet34_pretrained.pth')
@@ -451,6 +451,7 @@ class Runner(object):
             training_dynamics = np.load(os.path.join(td_files,"training_dynamics.npz"))['td']
             td = training_dynamics[:,:,0] #extract only ground turth as input for transferbility
             td = np.expand_dims(td, axis=2)
+            td = torch.tensor(td)
             print('Using input type with shape of', td.shape)
             try:
                 label_flip = torch.load(os.path.join(td_files,"metadata.pth"))['label_flipped'] # only for compute metrics in classification, no involved in training
@@ -794,8 +795,7 @@ class Runner(object):
             os.path.join(self.savedir,"train_log.csv"))
 
         # Save training dynamics
-        util.transfor_and_save(
-            savedir=self.savedir, td=td, gt_targets=self.train_set.assigned_labels)
+        util.transfor_and_save(self.savedir, td, self.train_set.assigned_labels)
         logging.info("Saved Training Dynamics to %s"%self.savedir)
 
         return self

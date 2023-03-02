@@ -13,10 +13,11 @@ from sklearn.model_selection import train_test_split
 import argparse
 
 parser = argparse.ArgumentParser(description='Noise Detector Training')
-parser.add_argument('--r', default=0.2, type=float, description='noise ratio')
-parser.add_argument('--dataset', default='cifar10', type=str, description='dataset')
-parser.add_argument('--resume', default=None, type=str, description='checkpoint for fine-tuning')
-parser.add_argument('--files_path', type=str,description='metadata and training dynamics path')
+# parser.add_argument('--r', default=0.2, type=float, description='noise ratio')
+parser.add_argument('--r', default=0.2, type=float, help='noise ratio')
+parser.add_argument('--dataset', default='cifar10', type=str, help='dataset')
+parser.add_argument('--resume', default=None, type=str, help='checkpoint for fine-tuning')
+parser.add_argument('--files_path', type=str, help='metadata and training dynamics path')
 args = parser.parse_args()
 
 def save_checkpoint(savedir, state, is_best):

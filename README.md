@@ -44,14 +44,14 @@ We use the same subset as [AUM](https://github.com/asappresearch/aum/tree/master
 ### STEP1: Acquisition of metadata and training dynamics (short for td) for manually corrupted or real-world datasets.
 
 ```sh
-generate_td.sh <datadir> <dataset> <seed> <noise_ratio> <noise_type> <net_type> <depth> <result_save_path>
+generate_td.sh <datadir> <dataset> <seed> <noise_ratio> <noise_type> <net_type> <depth>
 
 # run to get td for small datasets [no manual corruption]
-CUDA_VISIBLE_DEVICES=0 generate_td.sh "/root/codespace/datasets" "cifar10" 1 0. "uniform" "resnet" 32 "./replication"
+CUDA_VISIBLE_DEVICES=0 ./generate_td.sh "/root/codespace/datasets" "cifar10" 1 0. "uniform" "resnet" 32 
 # run to get td for small datasets [uniform 0.2 noisy]
-CUDA_VISIBLE_DEVICES=0 generate_td.sh "/root/codespace/datasets" "tiny_imagenet" 1 0.2 "uniform" "resnet" 32 "./replication"
+CUDA_VISIBLE_DEVICES=0 ./generate_td.sh "/root/codespace/datasets" "tiny_imagenet" 1 0.2 "uniform" "resnet" 32 
 # run to get td for large datasets [noise_ratio and noise_type are mute]
-CUDA_VISIBLE_DEVICES=0 generate_td.sh "/root/codespace/datasets" "webvision50" 1 0. "uniform" "resnet" 50 "./replication"
+CUDA_VISIBLE_DEVICES=0 ./generate_td.sh "/root/codespace/datasets" "webvision50" 1 0. "uniform" "resnet" 50 
 ```
 
 The arguments:
@@ -136,16 +136,16 @@ CUDA_VISIBLE_DEVICES=0 python train_detector.py --r 0.2 --dataset cub_200_2011 -
 ```sh
 small_dataset_sym_denoise.sh <datadir> <dataset> <seed> <noise_ratio> <noise_type> <result_save_path> <detector_file> <remove_ratio>
 # run to detect-divide target dataset and retrain the model
-detector_files='lstm_cifar10_20.pth.tar'
+detector_files='cifar10_0.2_lstm_detector.pth.tar'
 # run to denoise sym cifar10
 for remove_ratio in 0.15 0.2 0.25
 do
-CUDA_VISIBLE_DEVICES=0 small_dataset_sym_denoise.sh "/root/codespace/datasets" "cifar10" 1 0.2 "uniform" "./replication" ${detector_files} ${remove_ratio}
+CUDA_VISIBLE_DEVICES=0 ./small_dataset_sym_denoise.sh "/root/codespace/datasets" "cifar10" 1 0.2 "uniform" ${detector_files} ${remove_ratio}
 done
 # run to denoise asym cifar100
 for remove_ratio in 0.35 0.4 0.45
 do
-CUDA_VISIBLE_DEVICES=0 small_dataset_sym_denoise.sh "/root/codespace/datasets" "cifar100" 1 0.4 "asym" "./replication" ${detector_files} ${remove_ratio}
+CUDA_VISIBLE_DEVICES=0 ./small_dataset_sym_denoise.sh "/root/codespace/datasets" "cifar100" 1 0.4 "asym" ${detector_files} ${remove_ratio}
 done
 ```
 
@@ -157,11 +157,12 @@ After running this, the code will save all the followings in another folder name
 ```sh
 large_dataset_denoise.sh <datadir> <dataset> <seed> <result_save_path> <detector_file> <remove_ratio>
 # run to detect-divide target dataset and retrain the model
-detector_files='mono_lstm_cifar100_30.pth.tar'
+detector_files='cifar100_0.3_lstm_detector.pth.tar'
+remove_ratio=0.2
 # run to denoise WebVision50
-CUDA_VISIBLE_DEVICES=0 large_dataset_denoise.sh "/root/codespace/datasets" "webvision50" 1 "./replication" ${detector_files} ${remove_ratio}
+CUDA_VISIBLE_DEVICES=0 ./large_dataset_denoise.sh "/root/codespace/datasets" "webvision50" 1 ${detector_files} ${remove_ratio}
 # run to denoise Clothing100K
-CUDA_VISIBLE_DEVICES=0 large_dataset_denoise.sh "/root/codespace/datasets" "clothing100k" 1 "./replication" ${detector_files} ${remove_ratio}
+CUDA_VISIBLE_DEVICES=0 ./large_dataset_denoise.sh "/root/codespace/datasets" "clothing100k" 1 ${detector_files} ${remove_ratio}
 ```
 
 Arguments:
@@ -203,4 +204,4 @@ For replication, the only difference we made is the label of datasets. Based on 
 ## Credits
 The implementation is based on [AUM](https://github.com/asappresearch/aum/tree/master/examples/paper_replication) code.
 Part of experiments is based on [DivideMix](https://github.com/LiJunnan1992/DivideMix) and [AugDesc](https://github.com/KentoNishi/Augmentation-for-LNL)
-Thanks for their brilliant work!
+Thanks for their brilliant works!

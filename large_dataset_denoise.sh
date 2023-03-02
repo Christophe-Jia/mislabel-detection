@@ -3,19 +3,19 @@
 datadir=$1
 dataset=$2
 seed=$3
-result_save_path=$4
-detector_file=$5
-remove_ratio=$6
+detector_file=$4
+remove_ratio=$5
 
+result_save_path=replication
 net_type=resnet
 depth=50
 
 # td path 
-td_file="${result_save_path}/${dataset}_${net_type}${depth}_percmislabeled/computation4td_seed${seed}"
+td_file="${result_save_path}/${dataset}_${net_type}${depth}/computation4td_seed${seed}"
 
-# Remove the identified mislabeled saples and retrain
+# Remove the identified mislabeled samples and retrain
 savedir="${result_save_path}/${dataset}_${net_type}${depth}"
-savedir="${savedir}_percmislabeled/prune4retrain_seed${seed}/detector_${detector_files}/percremove${remove_ratio}"
+savedir="${savedir}/prune4retrain_seed${seed}/detector_${detector_files}/percremove${remove_ratio}"
 args="--data ${datadir}/${dataset} --save ${savedir} --dataset ${dataset} --net_type ${net_type} --depth ${depth}"
 args="${args} --seed ${seed} --num_valid 0"
 train_args="--num_epochs 300 --lr 0.1 --lr_drops 0.33,0.67, --wd 1e-4 --batch_size 256 --num_workers 4"
