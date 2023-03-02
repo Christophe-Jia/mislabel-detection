@@ -10,13 +10,12 @@ import numpy as np
 import pandas as pd
 import torch
 
-import fire
 import tqdm
 import util
 import copy
+import fire
 
-from detector_models.predict import get_order
-from detector_models import lstm
+from detector_model import *
 
 from losses import losses
 from models import models
@@ -449,7 +448,7 @@ class Runner(object):
             random.seed(self.seed)
             order = torch.randperm(len(self.train_set))
         else:
-            last_round_results = np.load(os.path.join(td_files,"training_dynamics.npz"))['td']
+            training_dynamics = np.load(os.path.join(td_files,"training_dynamics.npz"))['td']
             td = training_dynamics[:,:,0] #extract only ground turth as input for transferbility
             td = np.expand_dims(td, axis=2)
             print('Using input type with shape of', td.shape)
@@ -457,7 +456,7 @@ class Runner(object):
                 label_flip = torch.load(os.path.join(td_files,"metadata.pth"))['label_flipped'] # only for compute metrics in classification, no involved in training
             except:
                 label_flip = torch.ones((len(td)))
-            noise_detector = lstm.LSTM(in_dim=td.shape[-1],hidden_dim=64,n_layer=2)
+            noise_detector = LSTM(in_dim=td.shape[-1],hidden_dim=64,n_layer=2)
             noise_detector.load_state_dict(torch.load(detector_files)['state_dict'])
             if torch.cuda.is_available():
                 noise_detector.cuda()
@@ -704,7 +703,7 @@ class Runner(object):
         self.full_train_set = copy.deepcopy(self.train_set)   
         
         if td_files:
-            self.subset(perc=remove_ratio, td_files=td_files, detector_files=detector_files,mode=mode)
+            self.subset(perc=remove_ratio, td_files=td_files, detector_files=detector_files)
             logging.info(f"(Num samples remained to training phase: {len(self.train_set)})")
 
         elif rand_weight:
@@ -713,8 +712,7 @@ class Runner(object):
             logging.info("Standard weighting")
             
         # balance batch_size when removing samples
-        if mode == "only_clean_samples":
-            batch_size = int(batch_size*(1-remove_ratio))
+        batch_size = int(batch_size*(1-remove_ratio))
         
         # Storage to log results
         results = []

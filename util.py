@@ -113,7 +113,7 @@ def softmax_with_temperature(x,T):
             
     
 # drop last 遗留问题
-def transfor_and_save(self,logits,assigned_targets):
+def transfor_and_save(savedir, logits,assigned_targets):
     """Transform training dynamics with linear interpolation, then save in 'npz' format.
     Args:
         logits (dict): A dictionary recording training dynamics.
@@ -131,19 +131,19 @@ def transfor_and_save(self,logits,assigned_targets):
     logits = logits.astype(np.float16)
 
     targets_list = np.argsort(-logits.mean(axis=1), axis=1)
-    self.training_dynamics = np.ones_like(logits,dtype=np.float16)
-    self.labels = np.ones_like(logits[:,0,:],dtype=np.int16)
+    training_dynamics = np.ones_like(logits,dtype=np.float16)
+    labels = np.ones_like(logits[:,0,:],dtype=np.int16)
 
     for index,targets in enumerate(tqdm(targets_list,desc=f"Save")):
         # save ground turth td
-        self.labels[index,0] = assigned_targets[index]
-        self.training_dynamics[index,:,0] = logits[index,:,assigned_targets[index]].tolist()
+        labels[index,0] = assigned_targets[index]
+        training_dynamics[index,:,0] = logits[index,:,assigned_targets[index]].tolist()
         # save topk td
         top_i=1
         for target in targets:
             if target != assigned_targets[index]:
-                self.labels[index,top_i] = target
-                self.training_dynamics[index,:,top_i] = logits[index,:,target].tolist()
+                labels[index,top_i] = target
+                training_dynamics[index,:,top_i] = logits[index,:,target].tolist()
                 top_i+=1
 
-    np.savez_compressed(os.path.join(self.savedir, 'training_dynamics.npz'), **{'labels': labels, 'td': training_dynamics})
+    np.savez_compressed(os.path.join(savedir, 'training_dynamics.npz'), **{'labels': labels, 'td': training_dynamics})
