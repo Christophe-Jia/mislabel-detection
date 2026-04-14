@@ -20,6 +20,6 @@ models = {
 __all__ = [
     "DenseNet",
     "WideResNet",
-    "LeNet"
+    "LeNet",
     "models",
 ]

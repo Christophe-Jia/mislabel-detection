@@ -17,8 +17,8 @@ def reed_soft(logits, targets, beta=0.95, reduction='none'):
 
 def reed_hard(logits, targets, beta=0.8, reduction='none'):
     """
-    Soft version of Reed et al 2014.
-    Equivalent to entropy regularization.
+    Hard version of Reed et al 2014.
+    Uses max-confidence penalty.
     """
     cross_entropy_loss = cross_entropy(logits, targets, reduction=reduction)
     most_confident_probs = torch.softmax(logits, dim=-1).max(dim=-1)[0]

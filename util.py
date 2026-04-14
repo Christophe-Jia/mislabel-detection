@@ -1,11 +1,8 @@
-from collections import namedtuple
-import tqdm
 import os
-import torch
-import tqdm
-import json
+from collections import namedtuple
+
 import numpy as np
-import pandas as pd
+import torch
 
 class AverageMeter(object):
     """
@@ -107,12 +104,12 @@ def output_class(fields):
     return Output
 
 
-def softmax_with_temperature(x,T):
-    x_exp = torch.exp(x/T)
+def softmax_with_temperature(x, T):
+    """Compute softmax with temperature scaling."""
+    x_exp = torch.exp(x / T)
     return x_exp / torch.sum(x_exp)
-            
-    
-# drop last 遗留问题
+
+# Legacy issue: drop_last may cause missing entries in training dynamics
 def transfor_and_save(savedir, probas, assigned_targets):
     """Transform training dynamics with linear interpolation, then save in 'npz' format.
     Args:
