@@ -38,20 +38,25 @@ mislabel-detection/
 │   ├── lstm.py                #   LSTM binary classifier
 │   └── predict.py             #   Ranking & evaluation (get_order)
 ├── data_debug_dm/             # Data debugging experiments (Chapter 4.3)
-│   ├── cub_200_201/           #   CUB-200 label correction
-│   └── mini_webvision/        #   WebVision label correction
-├── generate_td.sh             # Step 1: Generate training dynamics
-├── small_dataset_sym_denoise.sh  # Step 3a: Denoise small datasets (CIFAR, Tiny ImageNet)
-└── large_dataset_denoise.sh   # Step 3b: Denoise large datasets (WebVision, Clothing1M)
+│   ├── Train_cub.py           #   CUB-200 co-training with MixMatch
+│   ├── Train_webvision.py     #   WebVision co-training with MixMatch
+│   ├── dataloader_cub.py      #   CUB dataloader with noise injection
+│   ├── dataloader_webvision.py #  WebVision dataloader
+│   ├── cub_200_201/           #   CUB-200 noise/repair label files
+│   └── mini_webvision/        #   WebVision repair label files
+└── run.sh                     # Unified experiment runner (all commands)
 ```
 
 ### Pipeline Overview
 
-The project follows a 3-phase pipeline:
+The project follows a 3-phase pipeline. All experiments are launched via `./run.sh <command>`:
 
-1. **Generate Training Dynamics** (`generate_td.sh` -> `runner.py`): Train a classification model and record per-sample prediction probabilities across all epochs.
-2. **Train Noise Detector** (`train_detector.py`): Train an LSTM to classify samples as clean or mislabeled, using the training dynamics as input sequences.
-3. **Denoise & Retrain** (`small_dataset_sym_denoise.sh` / `large_dataset_denoise.sh` -> `runner.py`): Use the trained detector to rank and remove suspected mislabeled samples, then retrain on the cleaned data.
+1. **Generate Training Dynamics** (`./run.sh generate_td`): Train a classification model and record per-sample prediction probabilities across all epochs.
+2. **Train Noise Detector** (`python train_detector.py`): Train an LSTM to classify samples as clean or mislabeled, using the training dynamics as input sequences.
+3. **Denoise & Retrain** (`./run.sh denoise_small` / `./run.sh denoise_large`): Use the trained detector to rank and remove suspected mislabeled samples, then retrain on the cleaned data.
+4. **Data Debugging** (`./run.sh train_cub` / `./run.sh train_webvision`): Label correction experiments using co-training with MixMatch (Chapter 4.3).
+
+Run `./run.sh help` for full usage information. Set `TESTRUN=1` to print commands without executing.
 
 ## Paper Replication in Chapters 4.1 and 4.2
 ---
@@ -80,14 +85,14 @@ We use the same subset as [AUM](https://github.com/asappresearch/aum/tree/master
 ### STEP 1: Acquire Metadata and Training Dynamics
 
 ```sh
-generate_td.sh <datadir> <dataset> <seed> <noise_ratio> <noise_type> <net_type> <depth>
+./run.sh generate_td <datadir> <dataset> <seed> <noise_ratio> <noise_type> <net_type> <depth>
 
 # Generate td for small datasets [no manual corruption]
-CUDA_VISIBLE_DEVICES=0 ./generate_td.sh "/root/codespace/datasets" "cifar10" 1 0. "uniform" "resnet" 32
+CUDA_VISIBLE_DEVICES=0 ./run.sh generate_td "/root/codespace/datasets" "cifar10" 1 0. "uniform" "resnet" 32
 # Generate td for small datasets [uniform 0.2 noisy]
-CUDA_VISIBLE_DEVICES=0 ./generate_td.sh "/root/codespace/datasets" "tiny_imagenet" 1 0.2 "uniform" "resnet" 32
+CUDA_VISIBLE_DEVICES=0 ./run.sh generate_td "/root/codespace/datasets" "tiny_imagenet" 1 0.2 "uniform" "resnet" 32
 # Generate td for large datasets [noise_ratio and noise_type are mute]
-CUDA_VISIBLE_DEVICES=0 ./generate_td.sh "/root/codespace/datasets" "webvision50" 1 0. "uniform" "resnet" 50
+CUDA_VISIBLE_DEVICES=0 ./run.sh generate_td "/root/codespace/datasets" "webvision50" 1 0. "uniform" "resnet" 50
 ```
 
 **Arguments:**
@@ -110,7 +115,7 @@ CUDA_VISIBLE_DEVICES=0 ./generate_td.sh "/root/codespace/datasets" "webvision50"
 - `<net_type>` - Model architecture, see `models/` (default: `resnet`)
 - `<depth>` - Model depth, e.g. 32 for ResNet-32 (default: `32`)
 
->The script `generate_td.sh` calls class `_Dataset` (in `runner.py`) to corrupt the dataset with the given seed, noise_type and noise_ratio, then calls `Runner.train_for_td_computation` to save metadata and acquire training dynamics.
+>The script calls class `_Dataset` (in `runner.py`) to corrupt the dataset with the given seed, noise_type and noise_ratio, then calls `Runner.train_for_td_computation` to save metadata and acquire training dynamics.
 
 **Output** (saved to `computation4td_seed{seed}/`):
 
@@ -144,20 +149,20 @@ Two pre-trained **LSTM** detectors are provided as defaults:
 
 #### 3a. Synthesized datasets (CIFAR-10/100, Tiny ImageNet)
 
->The script `small_dataset_sym_denoise.sh` calls `Runner.train`, which first invokes `Runner.subset` to detect and remove mislabeled samples. Detection metrics (**AUC** and **mAP**) are reported via `get_order()` from `detector_model/predict.py`. Then the model is retrained on the clean subset.
+>`./run.sh denoise_small` calls `Runner.train`, which first invokes `Runner.subset` to detect and remove mislabeled samples. Detection metrics (**AUC** and **mAP**) are reported via `get_order()` from `detector_model/predict.py`. Then the model is retrained on the clean subset.
 
 ```sh
-small_dataset_sym_denoise.sh <datadir> <dataset> <seed> <noise_ratio> <noise_type> <detector_file> <remove_ratio>
+./run.sh denoise_small <datadir> <dataset> <seed> <noise_ratio> <noise_type> <detector_file> <remove_ratio>
 
 # Denoise symmetric CIFAR-10
-detector_files='cifar10_0.2_lstm_detector.pth.tar'
+detector_file='cifar10_0.2_lstm_detector.pth.tar'
 for remove_ratio in 0.15 0.2 0.25; do
-    CUDA_VISIBLE_DEVICES=0 ./small_dataset_sym_denoise.sh "/root/codespace/datasets" "cifar10" 1 0.2 "uniform" ${detector_files} ${remove_ratio}
+    CUDA_VISIBLE_DEVICES=0 ./run.sh denoise_small "/root/codespace/datasets" "cifar10" 1 0.2 "uniform" ${detector_file} ${remove_ratio}
 done
 
 # Denoise asymmetric CIFAR-100
 for remove_ratio in 0.35 0.4 0.45; do
-    CUDA_VISIBLE_DEVICES=0 ./small_dataset_sym_denoise.sh "/root/codespace/datasets" "cifar100" 1 0.4 "asym" ${detector_files} ${remove_ratio}
+    CUDA_VISIBLE_DEVICES=0 ./run.sh denoise_small "/root/codespace/datasets" "cifar100" 1 0.4 "asym" ${detector_file} ${remove_ratio}
 done
 ```
 
@@ -166,15 +171,15 @@ done
 >After ranking all training samples, `Runner.train` selects a cleaner subset to retrain a new model. Requires `training_dynamics.npz` from Step 1 and `<detector_file>` from Step 2.
 
 ```sh
-large_dataset_denoise.sh <datadir> <dataset> <seed> <detector_file> <remove_ratio>
+./run.sh denoise_large <datadir> <dataset> <seed> <detector_file> <remove_ratio>
 
-detector_files='cifar100_0.3_lstm_detector.pth.tar'
+detector_file='cifar100_0.3_lstm_detector.pth.tar'
 remove_ratio=0.2
 
 # Denoise WebVision50
-CUDA_VISIBLE_DEVICES=0 ./large_dataset_denoise.sh "/root/codespace/datasets" "webvision50" 1 ${detector_files} ${remove_ratio}
+CUDA_VISIBLE_DEVICES=0 ./run.sh denoise_large "/root/codespace/datasets" "webvision50" 1 ${detector_file} ${remove_ratio}
 # Denoise Clothing100K
-CUDA_VISIBLE_DEVICES=0 ./large_dataset_denoise.sh "/root/codespace/datasets" "clothing100k" 1 ${detector_files} ${remove_ratio}
+CUDA_VISIBLE_DEVICES=0 ./run.sh denoise_large "/root/codespace/datasets" "clothing100k" 1 ${detector_file} ${remove_ratio}
 ```
 
 **Arguments:**
@@ -197,6 +202,20 @@ CUDA_VISIBLE_DEVICES=0 ./large_dataset_denoise.sh "/root/codespace/datasets" "cl
 >In Chapter 4.3, we apply a data debugging strategy to further boost SOTA performance. Using a detector trained on noisy CIFAR-100, we first select the most suspicious samples as label noise. We train a new model on the clean part of the dataset. The labels of these samples are then replaced by error-free ones (using ground truth labels for CUB and model predictions for WebVision), namely data debugging.
 >
 >Implementation details are in `data_debug_dm/cub_200_201/` and `data_debug_dm/mini_webvision/`. Based on the source code of [DivideMix](https://github.com/LiJunnan1992/DivideMix) and [AugDesc](https://github.com/KentoNishi/Augmentation-for-LNL), we mainly modify the datasets' label reading part. We provide the modified dataloaders and trainers for experiments on CUB-200-2011 and mini WebVision.
+
+```sh
+# CUB-200 baseline (20% symmetric noise)
+CUDA_VISIBLE_DEVICES=0 ./run.sh train_cub --r 0.2 --noise_mode sym --num_epochs 300
+
+# CUB-200 with 5% label repair
+CUDA_VISIBLE_DEVICES=0 ./run.sh train_cub --r 0.2 --noise_mode sym --repair_ratio 0.05 --num_epochs 300
+
+# WebVision with 5% label repair
+CUDA_VISIBLE_DEVICES=0 ./run.sh train_webvision --repair_ratio 0.05 --num_epochs 100
+
+# WebVision with 10% label repair
+CUDA_VISIBLE_DEVICES=0 ./run.sh train_webvision --repair_ratio 0.10 --num_epochs 100
+```
 
 ## Citing
 ---
